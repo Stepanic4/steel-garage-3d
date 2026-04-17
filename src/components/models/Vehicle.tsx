@@ -10,7 +10,7 @@ import { type ThreeElements } from "@react-three/fiber";
 type VehicleProps = ThreeElements["group"];
 
 const HOVER_EMISSIVE = "#6fb9ff";
-const DRACO_URL = "https://www.gstatic.com/draco/versioned/decoders/1.5.5/";
+const DRACO_URL = "/draco/gltf/";
 
 export function Vehicle(props: VehicleProps) {
   // Добавлен декодер

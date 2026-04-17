@@ -10,7 +10,7 @@ import { type ThreeElements } from "@react-three/fiber";
 type OilBarrelProps = ThreeElements["group"];
 
 const HOVER_EMISSIVE = "#ff8f4f";
-const DRACO_URL = "https://www.gstatic.com/draco/versioned/decoders/1.5.5/";
+const DRACO_URL = "/draco/gltf/";
 
 export function OilBarrel(props: OilBarrelProps) {
   // Добавлен декодер

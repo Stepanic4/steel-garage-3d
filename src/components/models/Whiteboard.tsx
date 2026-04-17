@@ -10,7 +10,7 @@ import { type ThreeElements } from "@react-three/fiber";
 type WhiteboardProps = ThreeElements["group"];
 
 const HOVER_EMISSIVE = "#d8ecff";
-const DRACO_URL = "https://www.gstatic.com/draco/versioned/decoders/1.5.5/";
+const DRACO_URL = "/draco/gltf/";
 
 export function Whiteboard(props: WhiteboardProps) {
   // Добавлен декодер
