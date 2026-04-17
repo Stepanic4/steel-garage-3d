@@ -1,11 +1,8 @@
 "use client";
 
-import { useFrame, useThree } from "@react-three/fiber";
-import { damp3 } from "maath/easing";
-import { useMemo } from "react";
-import { Vector3 } from "three";
+import { useThree } from "@react-three/fiber";
+import { useEffect, useRef } from "react";
 import { useGarageStore, type GarageFocus } from "@/store/useGarageStore";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 const CAMERA_POSITIONS: Record<GarageFocus, [number, number, number]> = {
   idle: [0, 2.2, 8],
@@ -21,29 +18,55 @@ const TARGET_POINTS: Record<GarageFocus, [number, number, number]> = {
   board: [-4, 0.8, -1.5],
 };
 
+type ControlsWithLookAt = {
+  setLookAt: (
+    px: number,
+    py: number,
+    pz: number,
+    tx: number,
+    ty: number,
+    tz: number,
+    transition: boolean,
+  ) => Promise<void>;
+  normalizeRotations: () => void;
+};
+
 export function CameraHandler() {
-  const { camera, controls } = useThree();
+  const controls = useThree(
+    (state) => state.controls as unknown as ControlsWithLookAt,
+  );
   const currentFocus = useGarageStore((state) => state.currentFocus);
-  const isManualControl = useGarageStore((state) => state.isManualControl);
+  const focusVersion = useGarageStore((state) => state.focusVersion);
 
-  const tPos = useMemo(() => new Vector3(), []);
-  const tLook = useMemo(() => new Vector3(), []);
+  const isInit = useRef(true);
 
-  useFrame((_state, delta) => {
-    // Если нет контролов ИЛИ юзер взял управление руками — не мешаем
-    if (!controls || isManualControl) return;
+  useEffect(() => {
+    if (!controls || typeof controls.setLookAt !== "function") return;
 
-    const orbitControls = controls as unknown as OrbitControlsImpl;
+    // Сброс оборотов перед полетом
+    if (typeof controls.normalizeRotations === "function") {
+      controls.normalizeRotations();
+    }
 
-    tPos.set(...CAMERA_POSITIONS[currentFocus]);
-    tLook.set(...TARGET_POINTS[currentFocus]);
+    const pos = CAMERA_POSITIONS[currentFocus];
+    const tgt = TARGET_POINTS[currentFocus];
 
-    damp3(camera.position, tPos, 0.35, delta);
-    damp3(orbitControls.target, tLook, 0.35, delta);
+    const enableTransition = !isInit.current;
 
-    // Принудительно апдейтим таргет контролов во время программного полета
-    orbitControls.update();
-  });
+    controls.setLookAt(
+      pos[0],
+      pos[1],
+      pos[2],
+      tgt[0],
+      tgt[1],
+      tgt[2],
+      enableTransition,
+    );
+
+    if (isInit.current) {
+      isInit.current = false;
+    }
+  }, [focusVersion, controls]); // Слушаем версию клика
 
   return null;
 }

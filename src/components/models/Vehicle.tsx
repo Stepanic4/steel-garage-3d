@@ -10,16 +10,17 @@ import { type ThreeElements } from "@react-three/fiber";
 type VehicleProps = ThreeElements["group"];
 
 const HOVER_EMISSIVE = "#6fb9ff";
+const DRACO_URL = "https://www.gstatic.com/draco/versioned/decoders/1.5.5/";
 
 export function Vehicle(props: VehicleProps) {
-  const { scene } = useGLTF("/model/vehicle.glb");
+  // Добавлен декодер
+  const { scene } = useGLTF("/model/vehicle.glb", DRACO_URL);
   const focusCar = useGarageStore((state) => state.focusCar);
   const [hovered, setHovered] = useState(false);
   const rootRef = useRef<Group>(null);
 
   const clonedScene = useMemo(() => scene.clone(true), [scene]);
 
-  // Инициализация теней и клонирование материалов (выполняется 1 раз)
   useEffect(() => {
     clonedScene.traverse((object) => {
       if (object instanceof Mesh) {
@@ -34,7 +35,6 @@ export function Vehicle(props: VehicleProps) {
     });
   }, [clonedScene]);
 
-  // Обновление свечения строго по триггеру стейта
   useEffect(() => {
     clonedScene.traverse((object) => {
       if (object instanceof Mesh) {
@@ -75,4 +75,4 @@ export function Vehicle(props: VehicleProps) {
   );
 }
 
-useGLTF.preload("/model/vehicle.glb");
+useGLTF.preload("/model/vehicle.glb", DRACO_URL);

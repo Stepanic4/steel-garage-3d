@@ -1,24 +1,20 @@
 "use client";
 
 import { useGLTF } from "@react-three/drei";
-import { ThreeEvent, useFrame, type ThreeElements } from "@react-three/fiber";
+import { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useState } from "react";
-import { Material, Mesh, MeshStandardMaterial } from "three";
+import { Mesh, MeshStandardMaterial } from "three";
 import { useGarageStore } from "@/store/useGarageStore";
+import { type ThreeElements } from "@react-three/fiber";
 
 type WhiteboardProps = ThreeElements["group"];
 
 const HOVER_EMISSIVE = "#d8ecff";
-
-function applyHoverMaterial(material: Material, hovered: boolean) {
-  if (material instanceof MeshStandardMaterial) {
-    material.emissive.set(HOVER_EMISSIVE);
-    material.emissiveIntensity = hovered ? 0.22 : 0;
-  }
-}
+const DRACO_URL = "https://www.gstatic.com/draco/versioned/decoders/1.5.5/";
 
 export function Whiteboard(props: WhiteboardProps) {
-  const { scene } = useGLTF("/model/whiteboard.glb");
+  // Добавлен декодер
+  const { scene } = useGLTF("/model/whiteboard.glb", DRACO_URL);
   const focusBoard = useGarageStore((state) => state.focusBoard);
   const [hovered, setHovered] = useState(false);
   const clonedScene = useMemo(() => scene.clone(true), [scene]);
@@ -37,16 +33,22 @@ export function Whiteboard(props: WhiteboardProps) {
     });
   }, [clonedScene]);
 
-  useFrame(() => {
+  // Заменили useFrame на useEffect
+  useEffect(() => {
     clonedScene.traverse((object) => {
-      if (!(object instanceof Mesh)) return;
-      if (Array.isArray(object.material)) {
-        object.material.forEach((mat) => applyHoverMaterial(mat, hovered));
-        return;
+      if (object instanceof Mesh) {
+        const materials = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
+        materials.forEach((mat) => {
+          if (mat instanceof MeshStandardMaterial) {
+            mat.emissive.set(HOVER_EMISSIVE);
+            mat.emissiveIntensity = hovered ? 0.22 : 0;
+          }
+        });
       }
-      applyHoverMaterial(object.material, hovered);
     });
-  });
+  }, [hovered, clonedScene]);
 
   const handlePointerOver = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
@@ -71,4 +73,4 @@ export function Whiteboard(props: WhiteboardProps) {
   );
 }
 
-useGLTF.preload("/model/whiteboard.glb");
+useGLTF.preload("/model/whiteboard.glb", DRACO_URL);

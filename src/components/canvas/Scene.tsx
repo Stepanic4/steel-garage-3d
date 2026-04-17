@@ -1,46 +1,37 @@
 "use client";
 
-import { Suspense, useSyncExternalStore } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import {
   MeshReflectorMaterial,
-  OrbitControls,
+  CameraControls,
   Environment,
   ContactShadows,
 } from "@react-three/drei";
 import { ACESFilmicToneMapping } from "three";
-import { useGarageStore } from "@/store/useGarageStore";
 import { Garage } from "./Garage";
 import { CameraHandler } from "./CameraHandler";
+import { useGarageStore } from "@/store/useGarageStore";
 
 export function Scene() {
-  const setManualControl = useGarageStore((state) => state.setManualControl);
-  const isManualControl = useGarageStore((state) => state.isManualControl);
+  // Инициализируем без блокировки рендера
+  const [isMobile, setIsMobile] = useState(false);
 
-  const isMobile = useSyncExternalStore(
-    (onStoreChange) => {
-      if (typeof window === "undefined") return () => {};
-      const mediaQuery = window.matchMedia("(max-width: 767px)");
-      mediaQuery.addEventListener("change", onStoreChange);
-      return () => mediaQuery.removeEventListener("change", onStoreChange);
-    },
-    () =>
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 767px)").matches,
-    () => false,
-  );
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile(); // Проверяем сразу на клиенте
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   return (
-    <div className="absolute inset-0 w-full h-full bg-sky-950">
+    <div className="absolute inset-0 w-full h-full">
       <Canvas
         shadows={!isMobile}
         dpr={isMobile ? 1 : [1, 1.5]}
         camera={{ position: isMobile ? [0, 2.4, 10] : [0, 2.2, 8], fov: 42 }}
-        gl={{
-          antialias: true,
-          toneMapping: ACESFilmicToneMapping,
-          powerPreference: "high-performance",
-        }}
+        // Жестко отключаем сглаживание на мобилках для спасения WebGL контекста
+        gl={{ antialias: !isMobile, toneMapping: ACESFilmicToneMapping }}
       >
         <Suspense fallback={null}>
           <color attach="background" args={["#050505"]} />
@@ -68,13 +59,11 @@ export function Scene() {
           />
 
           {isMobile ? (
-            // Мобильный рендер: дешевый матовый пол без отражений
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
               <planeGeometry args={[60, 60]} />
               <meshStandardMaterial color="#080808" roughness={1} />
             </mesh>
           ) : (
-            // Десктопный рендер: дорогие отражения
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
               <planeGeometry args={[60, 60]} />
               <MeshReflectorMaterial
@@ -93,7 +82,6 @@ export function Scene() {
             </mesh>
           )}
 
-          {/* Тени под объектами только для десктопа */}
           {!isMobile && (
             <ContactShadows opacity={0.6} scale={15} blur={2.4} far={4} />
           )}
@@ -101,16 +89,12 @@ export function Scene() {
           <Garage />
           <CameraHandler />
 
-          <OrbitControls
+          <CameraControls
             makeDefault
-            // Затухание включено только когда юзер крутит сцену сам
-            enableDamping={isManualControl}
-            dampingFactor={0.05}
             maxPolarAngle={Math.PI / 2.1}
             minDistance={4}
             maxDistance={15}
-            target={[0, 0.5, 0]}
-            onStart={() => setManualControl(true)}
+            onStart={() => useGarageStore.getState().setManualControl(true)}
           />
         </Suspense>
       </Canvas>

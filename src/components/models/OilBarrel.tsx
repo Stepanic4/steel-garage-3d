@@ -1,24 +1,20 @@
 "use client";
 
 import { useGLTF } from "@react-three/drei";
-import { ThreeEvent, useFrame, type ThreeElements } from "@react-three/fiber";
+import { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useState } from "react";
-import { Material, Mesh, MeshStandardMaterial } from "three";
+import { Mesh, MeshStandardMaterial } from "three";
 import { useGarageStore } from "@/store/useGarageStore";
+import { type ThreeElements } from "@react-three/fiber";
 
 type OilBarrelProps = ThreeElements["group"];
 
 const HOVER_EMISSIVE = "#ff8f4f";
-
-function applyHoverMaterial(material: Material, hovered: boolean) {
-  if (material instanceof MeshStandardMaterial) {
-    material.emissive.set(HOVER_EMISSIVE);
-    material.emissiveIntensity = hovered ? 0.35 : 0;
-  }
-}
+const DRACO_URL = "https://www.gstatic.com/draco/versioned/decoders/1.5.5/";
 
 export function OilBarrel(props: OilBarrelProps) {
-  const { scene } = useGLTF("/model/oil_barrel.glb");
+  // Добавлен декодер
+  const { scene } = useGLTF("/model/oil_barrel.glb", DRACO_URL);
   const focusBarrel = useGarageStore((state) => state.focusBarrel);
   const [hovered, setHovered] = useState(false);
   const clonedScene = useMemo(() => scene.clone(true), [scene]);
@@ -37,16 +33,22 @@ export function OilBarrel(props: OilBarrelProps) {
     });
   }, [clonedScene]);
 
-  useFrame(() => {
+  // Заменили useFrame на useEffect
+  useEffect(() => {
     clonedScene.traverse((object) => {
-      if (!(object instanceof Mesh)) return;
-      if (Array.isArray(object.material)) {
-        object.material.forEach((mat) => applyHoverMaterial(mat, hovered));
-        return;
+      if (object instanceof Mesh) {
+        const materials = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
+        materials.forEach((mat) => {
+          if (mat instanceof MeshStandardMaterial) {
+            mat.emissive.set(HOVER_EMISSIVE);
+            mat.emissiveIntensity = hovered ? 0.35 : 0;
+          }
+        });
       }
-      applyHoverMaterial(object.material, hovered);
     });
-  });
+  }, [hovered, clonedScene]);
 
   const handlePointerOver = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
@@ -71,4 +73,4 @@ export function OilBarrel(props: OilBarrelProps) {
   );
 }
 
-useGLTF.preload("/model/oil_barrel.glb");
+useGLTF.preload("/model/oil_barrel.glb", DRACO_URL);
