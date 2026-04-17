@@ -15,6 +15,7 @@ import { CameraHandler } from "./CameraHandler";
 
 export function Scene() {
   const setManualControl = useGarageStore((state) => state.setManualControl);
+  const isManualControl = useGarageStore((state) => state.isManualControl);
 
   const isMobile = useSyncExternalStore(
     (onStoreChange) => {
@@ -32,8 +33,7 @@ export function Scene() {
   return (
     <div className="absolute inset-0 w-full h-full bg-sky-950">
       <Canvas
-        shadows
-        // На мобилках строго dpr 1, иначе OOM краш
+        shadows={!isMobile}
         dpr={isMobile ? 1 : [1, 1.5]}
         camera={{ position: isMobile ? [0, 2.4, 10] : [0, 2.2, 8], fov: 42 }}
         gl={{
@@ -64,46 +64,52 @@ export function Scene() {
             penumbra={1}
             intensity={100}
             color="#ffffff"
-            castShadow
+            castShadow={!isMobile}
           />
 
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
-            <planeGeometry args={[60, 60]} />
-            <MeshReflectorMaterial
-              mirror={isMobile ? 0.4 : 0.8}
-              blur={isMobile ? [100, 50] : [400, 100]}
-              resolution={isMobile ? 128 : 512}
-              mixBlur={isMobile ? 2 : 10}
-              mixStrength={isMobile ? 10 : 40}
-              roughness={0.4}
-              depthScale={1}
-              minDepthThreshold={0.4}
-              maxDepthThreshold={1.2}
-              color="#080808"
-              metalness={0.5}
-            />
-          </mesh>
+          {isMobile ? (
+            // Мобильный рендер: дешевый матовый пол без отражений
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+              <planeGeometry args={[60, 60]} />
+              <meshStandardMaterial color="#080808" roughness={1} />
+            </mesh>
+          ) : (
+            // Десктопный рендер: дорогие отражения
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+              <planeGeometry args={[60, 60]} />
+              <MeshReflectorMaterial
+                mirror={0.8}
+                blur={[400, 100]}
+                resolution={512}
+                mixBlur={10}
+                mixStrength={40}
+                roughness={0.4}
+                depthScale={1}
+                minDepthThreshold={0.4}
+                maxDepthThreshold={1.2}
+                color="#080808"
+                metalness={0.5}
+              />
+            </mesh>
+          )}
 
-          {/* frames={1} запекает тени на мобилках в первый кадр, снимая нагрузку в цикле */}
-          <ContactShadows
-            opacity={0.6}
-            scale={15}
-            blur={isMobile ? 1 : 2.4}
-            far={4}
-            frames={isMobile ? 1 : Infinity}
-          />
+          {/* Тени под объектами только для десктопа */}
+          {!isMobile && (
+            <ContactShadows opacity={0.6} scale={15} blur={2.4} far={4} />
+          )}
 
           <Garage />
           <CameraHandler />
 
           <OrbitControls
             makeDefault
-            enableDamping
+            // Затухание включено только когда юзер крутит сцену сам
+            enableDamping={isManualControl}
             dampingFactor={0.05}
             maxPolarAngle={Math.PI / 2.1}
             minDistance={4}
             maxDistance={15}
-            target={[0, 0.5, 0]} // Жесткая фиксация стартового таргета
+            target={[0, 0.5, 0]}
             onStart={() => setManualControl(true)}
           />
         </Suspense>

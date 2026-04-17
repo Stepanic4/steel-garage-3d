@@ -30,19 +30,18 @@ export function CameraHandler() {
   const tLook = useMemo(() => new Vector3(), []);
 
   useFrame((_state, delta) => {
-    if (!controls) return;
+    // Если нет контролов ИЛИ юзер взял управление руками — не мешаем
+    if (!controls || isManualControl) return;
 
     const orbitControls = controls as unknown as OrbitControlsImpl;
 
-    // Интерполируем координаты, только если юзер не перехватил управление
-    if (!isManualControl) {
-      tPos.set(...CAMERA_POSITIONS[currentFocus]);
-      tLook.set(...TARGET_POINTS[currentFocus]);
+    tPos.set(...CAMERA_POSITIONS[currentFocus]);
+    tLook.set(...TARGET_POINTS[currentFocus]);
 
-      damp3(camera.position, tPos, 0.35, delta);
-      damp3(orbitControls.target, tLook, 0.35, delta);
-    }
+    damp3(camera.position, tPos, 0.35, delta);
+    damp3(orbitControls.target, tLook, 0.35, delta);
 
+    // Принудительно апдейтим таргет контролов во время программного полета
     orbitControls.update();
   });
 
