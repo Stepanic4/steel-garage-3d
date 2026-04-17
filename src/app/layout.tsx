@@ -22,7 +22,7 @@ interface RootLayoutProps {
 export default function RootLayout({ children }: Readonly<RootLayoutProps>) {
   return (
     <html lang="en">
-      <body className="antialiased bg-[#050505] text-white overflow-hidden">
+      <body className="antialiased bg-sky-950 text-white overflow-hidden">
         {children}
       </body>
     </html>

@@ -32,7 +32,7 @@ export function Scene() {
   );
 
   return (
-    <div className="h-[100dvh] w-full bg-[#050505]">
+    <div className="h-[100dvh] w-full bg-sky-950">
       <Canvas
         shadows
         dpr={isMobile ? [1, 1.2] : [1, 1.5]}
