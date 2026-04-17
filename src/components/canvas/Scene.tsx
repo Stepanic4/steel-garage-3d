@@ -14,9 +14,7 @@ import { Garage } from "./Garage";
 import { CameraHandler } from "./CameraHandler";
 
 export function Scene() {
-  const setOrbitInteracting = useGarageStore(
-    (state) => state.setOrbitInteracting,
-  );
+  const setManualControl = useGarageStore((state) => state.setManualControl);
 
   const isMobile = useSyncExternalStore(
     (onStoreChange) => {
@@ -32,13 +30,17 @@ export function Scene() {
   );
 
   return (
-    <div className="h-[100dvh] w-full bg-sky-950">
+    <div className="absolute inset-0 w-full h-full bg-sky-950">
       <Canvas
         shadows
-        dpr={isMobile ? [1, 1.2] : [1, 1.5]}
-        // Устанавливаем стартовую позицию [0, 2.2, 8] — то, что тебе нравится
+        // На мобилках строго dpr 1, иначе OOM краш
+        dpr={isMobile ? 1 : [1, 1.5]}
         camera={{ position: isMobile ? [0, 2.4, 10] : [0, 2.2, 8], fov: 42 }}
-        gl={{ antialias: true, toneMapping: ACESFilmicToneMapping }}
+        gl={{
+          antialias: true,
+          toneMapping: ACESFilmicToneMapping,
+          powerPreference: "high-performance",
+        }}
       >
         <Suspense fallback={null}>
           <color attach="background" args={["#050505"]} />
@@ -68,11 +70,11 @@ export function Scene() {
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
             <planeGeometry args={[60, 60]} />
             <MeshReflectorMaterial
-              mirror={0.8}
-              blur={[400, 100]}
-              resolution={isMobile ? 256 : 512}
-              mixBlur={10}
-              mixStrength={40}
+              mirror={isMobile ? 0.4 : 0.8}
+              blur={isMobile ? [100, 50] : [400, 100]}
+              resolution={isMobile ? 128 : 512}
+              mixBlur={isMobile ? 2 : 10}
+              mixStrength={isMobile ? 10 : 40}
               roughness={0.4}
               depthScale={1}
               minDepthThreshold={0.4}
@@ -82,7 +84,14 @@ export function Scene() {
             />
           </mesh>
 
-          <ContactShadows opacity={0.6} scale={15} blur={2.4} far={4} />
+          {/* frames={1} запекает тени на мобилках в первый кадр, снимая нагрузку в цикле */}
+          <ContactShadows
+            opacity={0.6}
+            scale={15}
+            blur={isMobile ? 1 : 2.4}
+            far={4}
+            frames={isMobile ? 1 : Infinity}
+          />
 
           <Garage />
           <CameraHandler />
@@ -94,8 +103,8 @@ export function Scene() {
             maxPolarAngle={Math.PI / 2.1}
             minDistance={4}
             maxDistance={15}
-            onStart={() => setOrbitInteracting(true)}
-            onEnd={() => setOrbitInteracting(false)}
+            // Врубаем мануалку при касании. onEnd убран, чтобы камера не возвращалась.
+            onStart={() => setManualControl(true)}
           />
         </Suspense>
       </Canvas>

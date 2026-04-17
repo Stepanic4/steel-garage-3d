@@ -8,9 +8,7 @@ import { useGarageStore, type GarageFocus } from "@/store/useGarageStore";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 
 const CAMERA_POSITIONS: Record<GarageFocus, [number, number, number]> = {
-  // Теперь idle совпадает с начальным положением камеры в Scene.tsx
   idle: [0, 2.2, 8],
-  // Чуть дальше, чтобы не "врезаться" в капот
   car: [0, 1.5, 7.5],
   barrel: [5, 1.8, 5],
   board: [-5, 1.8, 5],
@@ -26,9 +24,7 @@ const TARGET_POINTS: Record<GarageFocus, [number, number, number]> = {
 export function CameraHandler() {
   const { camera, controls } = useThree();
   const currentFocus = useGarageStore((state) => state.currentFocus);
-  const isOrbitInteracting = useGarageStore(
-    (state) => state.isOrbitInteracting,
-  );
+  const isManualControl = useGarageStore((state) => state.isManualControl);
 
   const tPos = useMemo(() => new Vector3(), []);
   const tLook = useMemo(() => new Vector3(), []);
@@ -36,19 +32,18 @@ export function CameraHandler() {
   useFrame((_state, delta) => {
     if (!controls) return;
 
-    const orbiControls = controls as unknown as OrbitControlsImpl;
+    const orbitControls = controls as unknown as OrbitControlsImpl;
 
-    if (!isOrbitInteracting) {
+    // Интерполируем координаты, только если юзер не перехватил управление
+    if (!isManualControl) {
       tPos.set(...CAMERA_POSITIONS[currentFocus]);
       tLook.set(...TARGET_POINTS[currentFocus]);
 
-      // Двигаем позицию и цель. 0.35 — оптимальный баланс плавности.
       damp3(camera.position, tPos, 0.35, delta);
-      damp3(orbiControls.target, tLook, 0.35, delta);
+      damp3(orbitControls.target, tLook, 0.35, delta);
     }
 
-    // Вызываем всегда для гладкости OrbitControls
-    orbiControls.update();
+    orbitControls.update();
   });
 
   return null;

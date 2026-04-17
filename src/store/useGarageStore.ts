@@ -4,9 +4,9 @@ export type GarageFocus = "idle" | "car" | "barrel" | "board";
 
 type GarageStore = {
   currentFocus: GarageFocus;
-  isOrbitInteracting: boolean;
+  isManualControl: boolean;
   setFocus: (focus: GarageFocus) => void;
-  setOrbitInteracting: (value: boolean) => void;
+  setManualControl: (value: boolean) => void;
   focusCar: () => void;
   focusBarrel: () => void;
   focusBoard: () => void;
@@ -15,11 +15,11 @@ type GarageStore = {
 
 export const useGarageStore = create<GarageStore>((set) => ({
   currentFocus: "idle",
-  isOrbitInteracting: false,
-  setFocus: (focus) => set({ currentFocus: focus }),
-  setOrbitInteracting: (value) => set({ isOrbitInteracting: value }),
-  focusCar: () => set({ currentFocus: "car" }),
-  focusBarrel: () => set({ currentFocus: "barrel" }),
-  focusBoard: () => set({ currentFocus: "board" }),
-  clearFocus: () => set({ currentFocus: "idle" }),
+  isManualControl: false,
+  setFocus: (focus) => set({ currentFocus: focus, isManualControl: false }),
+  setManualControl: (value) => set({ isManualControl: value }),
+  focusCar: () => set({ currentFocus: "car", isManualControl: false }),
+  focusBarrel: () => set({ currentFocus: "barrel", isManualControl: false }),
+  focusBoard: () => set({ currentFocus: "board", isManualControl: false }),
+  clearFocus: () => set({ currentFocus: "idle", isManualControl: false }),
 }));
