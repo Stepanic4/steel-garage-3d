@@ -103,7 +103,7 @@ export function Scene() {
             maxPolarAngle={Math.PI / 2.1}
             minDistance={4}
             maxDistance={15}
-            // Врубаем мануалку при касании. onEnd убран, чтобы камера не возвращалась.
+            target={[0, 0.5, 0]} // Жесткая фиксация стартового таргета
             onStart={() => setManualControl(true)}
           />
         </Suspense>

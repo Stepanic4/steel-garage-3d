@@ -1,21 +1,15 @@
 "use client";
 
 import { useGLTF } from "@react-three/drei";
-import { ThreeEvent, useFrame, type ThreeElements } from "@react-three/fiber";
+import { ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Group, Material, Mesh, MeshStandardMaterial } from "three";
+import { Group, Mesh, MeshStandardMaterial } from "three";
 import { useGarageStore } from "@/store/useGarageStore";
+import { type ThreeElements } from "@react-three/fiber";
 
 type VehicleProps = ThreeElements["group"];
 
 const HOVER_EMISSIVE = "#6fb9ff";
-
-function applyHoverMaterial(material: Material, hovered: boolean) {
-  if (material instanceof MeshStandardMaterial) {
-    material.emissive.set(HOVER_EMISSIVE);
-    material.emissiveIntensity = hovered ? 0.28 : 0;
-  }
-}
 
 export function Vehicle(props: VehicleProps) {
   const { scene } = useGLTF("/model/vehicle.glb");
@@ -25,6 +19,7 @@ export function Vehicle(props: VehicleProps) {
 
   const clonedScene = useMemo(() => scene.clone(true), [scene]);
 
+  // Инициализация теней и клонирование материалов (выполняется 1 раз)
   useEffect(() => {
     clonedScene.traverse((object) => {
       if (object instanceof Mesh) {
@@ -39,16 +34,22 @@ export function Vehicle(props: VehicleProps) {
     });
   }, [clonedScene]);
 
-  useFrame(() => {
+  // Обновление свечения строго по триггеру стейта
+  useEffect(() => {
     clonedScene.traverse((object) => {
-      if (!(object instanceof Mesh)) return;
-      if (Array.isArray(object.material)) {
-        object.material.forEach((mat) => applyHoverMaterial(mat, hovered));
-        return;
+      if (object instanceof Mesh) {
+        const materials = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
+        materials.forEach((mat) => {
+          if (mat instanceof MeshStandardMaterial) {
+            mat.emissive.set(HOVER_EMISSIVE);
+            mat.emissiveIntensity = hovered ? 0.28 : 0;
+          }
+        });
       }
-      applyHoverMaterial(object.material, hovered);
     });
-  });
+  }, [hovered, clonedScene]);
 
   const handlePointerOver = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
